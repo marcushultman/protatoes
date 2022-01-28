@@ -21,8 +21,7 @@ struct Root {
         util::NewTypeResolverForDescriptorPool(_prefix, _pool.get()));
   }
 
-  void copyProto(const FileDescriptorProto &proto) { _db->Add(proto); }
-  void moveProto(FileDescriptorProto *proto) { _db->AddAndOwn(proto); }
+  void add(FileDescriptorProto *proto) { _db->AddAndOwn(proto); }
 
   util::TypeResolver *resolver() const { return _type_resolver.get(); }
   std::string makeTypeUrl(const std::string &name) const { return _prefix + "/" + name; }
@@ -32,6 +31,15 @@ struct Root {
   std::unique_ptr<SimpleDescriptorDatabase> _db;
   std::unique_ptr<DescriptorPool> _pool;
   std::unique_ptr<util::TypeResolver> _type_resolver;
+};
+
+struct Encoded {
+  std::string str;
+
+  emscripten::val arr() {
+    return emscripten::val(
+        emscripten::typed_memory_view(str.size(), reinterpret_cast<uint8_t *>(str.data())));
+  }
 };
 
 }  // namespace
@@ -44,36 +52,30 @@ void release(Root *root) {
   std::unique_ptr<Root>(root).reset();
 }
 
-//
+using namespace google::protobuf::util;
 
 FileDescriptorProto *parseFile(std::string name, std::string source) {
   auto parser = compiler::Parser();
   auto stream = io::ArrayInputStream(source.data(), source.size());
   auto tokenizer = io::Tokenizer(&stream, nullptr);
   auto proto = std::make_unique<FileDescriptorProto>();
-  bool ok = parser.Parse(&tokenizer, proto.get());
+  parser.Parse(&tokenizer, proto.get());
   proto->set_name(std::move(name));
-  assert(ok);
   return proto.release();
 }
 
-void copyProto(Root *root, const FileDescriptorProto *proto) {
-  root->copyProto(*proto);
+std::string addProto(Root *root, std::string name, std::string source) {
+  auto proto = parseFile(std::move(name), std::move(source));
+  root->add(proto);
+  std::string json;
+  MessageToJsonString(*proto, &json);
+  return json;
 }
 
-void moveProto(Root *root, FileDescriptorProto *proto) {
-  root->moveProto(proto);
-}
-
-//
-
-using namespace google::protobuf::util;
-
-emscripten::val encode(Root *root, std::string type, std::string json) {
-  std::string str;
-  JsonToBinaryString(root->resolver(), root->makeTypeUrl(type), json, &str);
-  return emscripten::val(
-      emscripten::typed_memory_view(str.size(), reinterpret_cast<uint8_t *>(str.data())));
+Encoded encode(Root *root, std::string type, std::string json) {
+  Encoded encoded;
+  JsonToBinaryString(root->resolver(), root->makeTypeUrl(type), json, &encoded.str);
+  return encoded;
 }
 
 std::string decode(Root *root, std::string type, std::string bin) {
@@ -87,14 +89,12 @@ using emscripten::allow_raw_pointers;
 EMSCRIPTEN_BINDINGS(my_module) {
   emscripten::class_<FileDescriptorProto>("FileDescriptorProto");
   emscripten::class_<Root>("Root");
-  emscripten::register_vector<uint8_t>("uint8_t");
+  emscripten::class_<Encoded>("Encoded").function("arr", &Encoded::arr);
 
   emscripten::function("createRoot", &createRoot, allow_raw_pointers());
   emscripten::function("release", &release, allow_raw_pointers());
 
-  emscripten::function("parseFile", &parseFile, allow_raw_pointers());
-  emscripten::function("copyProto", &copyProto, allow_raw_pointers());
-  emscripten::function("moveProto", &moveProto, allow_raw_pointers());
+  emscripten::function("addProto", &addProto, allow_raw_pointers());
 
   emscripten::function("encode", &encode, allow_raw_pointers());
   emscripten::function("decode", &decode, allow_raw_pointers());

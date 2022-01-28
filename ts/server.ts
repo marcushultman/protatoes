@@ -1,5 +1,5 @@
 import { Application, Context, Router } from 'https://deno.land/x/oak/mod.ts';
-import { createRoot, decode, encode, moveProto, parseFile, release, Root } from './api.ts';
+import { addProto, addProtoDeep, createRoot, decode, encode, release, Root } from './api.ts';
 
 interface MessageEntry {
   createdAt: Date;
@@ -65,12 +65,16 @@ router
     cctx.assert(entry, 404);
 
     // todo: access control
-    const source = await ctx.request.body({ type: 'text' }).value;
+    // ctx.request.url.searchParams.get('');
+    const sourceOrUrl = await ctx.request.body({ type: 'text' }).value;
 
-    // todo: implement
-    cctx.assert(!source.startsWith('https://'), 500); // not implemented
-
-    moveProto(entry.root, parseFile(name, source));
+    try {
+      const url = new URL(sourceOrUrl);
+      const descriptors = await addProtoDeep(entry.root, url);
+      ctx.response.body = { descriptors };
+    } catch (_: unknown) {
+      ctx.response.body = addProto(entry.root, name, sourceOrUrl);
+    }
     console.log(`File '${name}' added`);
     ctx.response.status = 202;
   })

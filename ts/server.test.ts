@@ -24,7 +24,10 @@ Deno.test({
     // Add proto
     res = await fetch(`${BASE_URL}/foo/proto/test.proto`, { method: 'post', body: SOURCE });
     assert(res.ok);
-    await res.body?.cancel();
+    const { syntax, name, package: pkg } = await res.json();
+    assertEquals(syntax, 'proto3');
+    assertEquals(name, 'test.proto');
+    assertEquals(pkg, 'foo.bar');
 
     // Encode Baz
     const resEncode = await fetch(`${BASE_URL}/foo/encode/foo.bar.Baz`, {
@@ -35,7 +38,7 @@ Deno.test({
     assert(resEncode.ok);
     const data = await resEncode.arrayBuffer();
 
-    assert(data.byteLength === 10);
+    assertEquals(data.byteLength, 10);
 
     // Decode Baz
     const resDecode = await fetch(`${BASE_URL}/foo/decode/foo.bar.Baz`, {
