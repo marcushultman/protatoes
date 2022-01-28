@@ -1,0 +1,8 @@
+{
+  "fmt": {
+    "options": {
+      "lineWidth": 100,
+      "singleQuote": true
+    }
+  }
+}
