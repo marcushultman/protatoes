@@ -1,10 +1,15 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.121.0/testing/asserts.ts';
 import { encodeResolve } from './apix.ts';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = Deno.env.get('PROD') === '1'
+  ? 'https://protatoes.deno.dev'
+  : 'http://localhost:8000';
 
-const FILE_URL = new URL('../proto/test.proto', import.meta.url);
-const SOURCE = Deno.readTextFileSync(FILE_URL);
+const FILE_URL = Deno.env.get('PROD') === '1'
+  ? new URL('https://raw.githubusercontent.com/marcushultman/protatoes/main/proto/test.proto')
+  : new URL('../proto/test.proto', import.meta.url);
+
+const SOURCE = await fetch(FILE_URL).then((res) => res.text());
 
 Deno.test({
   name: 'local-json',
