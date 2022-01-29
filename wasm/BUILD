@@ -1,4 +1,5 @@
 load("@emsdk//emscripten_toolchain:wasm_rules.bzl", "wasm_cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 WASM_LINKOPTS = [
   "--bind",
@@ -17,6 +18,7 @@ cc_binary(
     "--extern-pre-js=$(location :polyfill.js)"
   ],
   deps = [
+    "//proto:protatoes_cc_proto",
     "@com_google_protobuf//:protoc_lib",
   ],
 )

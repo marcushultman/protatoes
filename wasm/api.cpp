@@ -1,4 +1,5 @@
 #include <string>
+#include <unordered_map>
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
 #include <google/protobuf/compiler/parser.h>
@@ -8,6 +9,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/util/type_resolver_util.h>
+#include "proto/protatoes.pb.h"
 
 namespace {
 using namespace google::protobuf;
@@ -84,6 +86,24 @@ std::string decode(Root *root, std::string type, std::string bin) {
   return json;
 }
 
+Encoded encodeResolve(std::string json) {
+  Encoded encoded;
+  static protatoes::Resolve resolve;
+  if (JsonStringToMessage(json, &resolve).ok()) {
+    resolve.SerializeToString(&encoded.str);
+  }
+  return encoded;
+}
+
+std::string decodeResolve(std::string bin) {
+  std::string json;
+  static protatoes::Resolve resolve;
+  if (resolve.ParseFromString(bin)) {
+    MessageToJsonString(resolve, &json);
+  }
+  return json;
+}
+
 using emscripten::allow_raw_pointers;
 
 EMSCRIPTEN_BINDINGS(my_module) {
@@ -98,4 +118,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
   emscripten::function("encode", &encode, allow_raw_pointers());
   emscripten::function("decode", &decode, allow_raw_pointers());
+
+  emscripten::function("encodeResolve", &encodeResolve);
+  emscripten::function("decodeResolve", &decodeResolve);
 }

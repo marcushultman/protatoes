@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package protatoes;
+
+message File {
+  string name = 1;
+  string source = 2;
+}
+
+message Query {
+  map<string, string> params = 1;
+}
+
+message Resolve {
+  optional string prefix = 1; 
+  string entry = 2;
+  repeated string includes = 3;
+  repeated File files = 4;
+  map<string, Query> query = 5;
+}

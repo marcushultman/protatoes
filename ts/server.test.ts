@@ -1,33 +1,21 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.121.0/testing/asserts.ts';
+import { encodeResolve } from './apix.ts';
 
 const BASE_URL = 'http://localhost:8000';
 
-const WEB_URL = new URL(
-  'https://raw.githubusercontent.com/marcushultman/protatoes/main/proto/test.proto',
-);
 const FILE_URL = new URL('../proto/test.proto', import.meta.url);
 const SOURCE = Deno.readTextFileSync(FILE_URL);
 
 Deno.test({
-  name: 'source',
+  name: 'local-json',
   async fn() {
-    // Add 'foo' namespace (JSON)
-    let res = await fetch(`${BASE_URL}/foo`, { method: 'post' });
-    assert(res.ok);
-    await res.body?.cancel();
-
-    // Add proto
-    res = await fetch(`${BASE_URL}/foo/proto/test.proto`, { method: 'post', body: SOURCE });
-    assert(res.ok);
-    const { syntax, name, package: pkg } = await res.json();
-    assertEquals(syntax, 'proto3');
-    assertEquals(name, 'test.proto');
-    assertEquals(pkg, 'foo.bar');
-
-    // Encode Baz
-    const resEncode = await fetch(`${BASE_URL}/foo/encode/foo.bar.Baz`, {
+    const headers: HeadersInit = {
+      'x-resolve': JSON.stringify({ entry: FILE_URL }),
+      'x-resolve-type': 'json',
+    };
+    const resEncode = await fetch(`${BASE_URL}/encode/foo.bar.Baz`, {
       method: 'post',
-      headers: { 'content-type': 'application/json' },
+      headers: { ...headers, 'content-type': 'application/json' },
       body: JSON.stringify({ a: 'foo', b: 'bar' }),
     });
     assert(resEncode.ok);
@@ -35,10 +23,9 @@ Deno.test({
 
     assertEquals(data.byteLength, 10);
 
-    // Decode Baz
-    const resDecode = await fetch(`${BASE_URL}/foo/decode/foo.bar.Baz`, {
+    const resDecode = await fetch(`${BASE_URL}/decode/foo.bar.Baz`, {
       method: 'post',
-      headers: { 'content-type': 'application/protobuf' },
+      headers: { ...headers, 'content-type': 'application/protobuf' },
       body: data,
     });
     assert(resDecode.ok);
@@ -48,30 +35,15 @@ Deno.test({
 });
 
 Deno.test({
-  name: 'local',
+  name: 'local-proto',
   async fn() {
-    // Add 'bar' namespace (JSON)
-    let res = await fetch(`${BASE_URL}/bar`, { method: 'post' });
-    assert(res.ok);
-    await res.body?.cancel();
-
-    // Add proto
-    res = await fetch(`${BASE_URL}/bar/proto/test.proto`, {
+    const blob = encodeResolve({ entry: FILE_URL.toString() });
+    const headers: HeadersInit = {
+      'x-resolve': btoa(String.fromCharCode.apply(null, [...blob])),
+    };
+    const resEncode = await fetch(`${BASE_URL}/encode/foo.bar.Baz`, {
       method: 'post',
-      body: FILE_URL.toString(),
-    });
-    assert(res.ok);
-    const { descriptors } = await res.json();
-    assertEquals(descriptors.length, 1);
-    const { syntax, name, package: pkg } = descriptors[0];
-    assertEquals(syntax, 'proto3');
-    assertEquals(name, 'test.proto');
-    assertEquals(pkg, 'foo.bar');
-
-    // Encode Baz
-    const resEncode = await fetch(`${BASE_URL}/bar/encode/foo.bar.Baz`, {
-      method: 'post',
-      headers: { 'content-type': 'application/json' },
+      headers: { ...headers, 'content-type': 'application/json' },
       body: JSON.stringify({ a: 'foo', b: 'bar' }),
     });
     assert(resEncode.ok);
@@ -79,10 +51,9 @@ Deno.test({
 
     assertEquals(data.byteLength, 10);
 
-    // Decode Baz
-    const resDecode = await fetch(`${BASE_URL}/bar/decode/foo.bar.Baz`, {
+    const resDecode = await fetch(`${BASE_URL}/decode/foo.bar.Baz`, {
       method: 'post',
-      headers: { 'content-type': 'application/protobuf' },
+      headers: { ...headers, 'content-type': 'application/protobuf' },
       body: data,
     });
     assert(resDecode.ok);
@@ -91,46 +62,76 @@ Deno.test({
   },
 });
 
+Deno.test({
+  name: 'source',
+  async fn() {
+    const headers: HeadersInit = {
+      'x-resolve': JSON.stringify({ files: [{ name: 'text.proto', source: SOURCE }] }),
+      'x-resolve-type': 'json',
+    };
+    const resEncode = await fetch(`${BASE_URL}/encode/foo.bar.Baz`, {
+      method: 'post',
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: JSON.stringify({ a: 'foo', b: 'bar' }),
+    });
+    assert(resEncode.ok);
+    const data = await resEncode.arrayBuffer();
+
+    assertEquals(data.byteLength, 10);
+
+    const resDecode = await fetch(`${BASE_URL}/decode/foo.bar.Baz`, {
+      method: 'post',
+      headers: { ...headers, 'content-type': 'application/protobuf' },
+      body: data,
+    });
+    assert(resDecode.ok);
+
+    assertEquals(await resDecode.json(), { a: 'foo', b: 'bar' });
+  },
+});
 Deno.test({
   name: 'web',
   async fn() {
-    // Add 'bar' namespace (JSON)
-    let res = await fetch(`${BASE_URL}/baz`, { method: 'post' });
-    assert(res.ok);
-    await res.body?.cancel();
-
-    // Add proto
-    res = await fetch(`${BASE_URL}/baz/proto/test.proto`, {
+    const headers: HeadersInit = {
+      'x-resolve': JSON.stringify({
+        entry: 'google/protobuf/any_test.proto',
+        includes: ['https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/'],
+      }),
+      'x-resolve-type': 'json',
+    };
+    const resEncode = await fetch(`${BASE_URL}/encode/protobuf_unittest.TestAny`, {
       method: 'post',
-      body: WEB_URL.toString(),
-    });
-    assert(res.ok);
-    const { descriptors } = await res.json();
-    assertEquals(descriptors.length, 1);
-    const { syntax, name, package: pkg } = descriptors[0];
-    assertEquals(syntax, 'proto3');
-    assertEquals(name, 'test.proto');
-    assertEquals(pkg, 'foo.bar');
-
-    // Encode Baz
-    const resEncode = await fetch(`${BASE_URL}/baz/encode/foo.bar.Baz`, {
-      method: 'post',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ a: 'foo', b: 'bar' }),
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        int32Value: 42,
+        text: '42',
+        anyValue: {
+          '@type': 'type.googleapis.com/protobuf_unittest.TestAny',
+          int32Value: 43,
+          text: '43',
+        },
+      }),
     });
     assert(resEncode.ok);
     const data = await resEncode.arrayBuffer();
 
-    assertEquals(data.byteLength, 10);
+    assertEquals(data.byteLength, 63);
 
-    // Decode Baz
-    const resDecode = await fetch(`${BASE_URL}/baz/decode/foo.bar.Baz`, {
+    const resDecode = await fetch(`${BASE_URL}/decode/protobuf_unittest.TestAny`, {
       method: 'post',
-      headers: { 'content-type': 'application/protobuf' },
+      headers: { ...headers, 'content-type': 'application/protobuf' },
       body: data,
     });
     assert(resDecode.ok);
 
-    assertEquals(await resDecode.json(), { a: 'foo', b: 'bar' });
+    assertEquals(await resDecode.json(), {
+      int32Value: 42,
+      text: '42',
+      anyValue: {
+        '@type': 'type.googleapis.com/protobuf_unittest.TestAny',
+        int32Value: 43,
+        text: '43',
+      },
+    });
   },
 });

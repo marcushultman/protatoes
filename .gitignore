@@ -1,2 +1,4 @@
 bazel-*
 bin/
+
+ts/apix-auth.test.ts
