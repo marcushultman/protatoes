@@ -6,6 +6,7 @@ import {
   encode as _encode,
   encodeResolve,
   FileDescriptorProto,
+  JsonObject,
   Resolve,
   Root,
 } from './api.ts';
@@ -67,9 +68,9 @@ async function getOrCreateRoot(bin: Uint8Array) {
 }
 
 export { encodeResolve };
-export type { Resolve };
+export type { JsonObject, Resolve };
 
-export async function encode(blob: Uint8Array, type: string, obj: unknown): Promise<Uint8Array> {
+export async function encode<T>(blob: Uint8Array, type: string, obj: JsonObject<T>) {
   return _encode(await getOrCreateRoot(blob), type, obj);
 }
 

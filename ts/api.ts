@@ -10,6 +10,16 @@ const {
   release,
 } = await loadWasm();
 
+export type JsonObject<T> = Uint8Array | string | T;
+
+function toJSONByteString(obj: JsonObject<unknown>) {
+  if (obj instanceof Uint8Array) {
+    return obj;
+  }
+  const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
+  return new TextEncoder().encode(str);
+}
+
 export { createRoot, release };
 
 export type Root = unknown;
@@ -24,8 +34,8 @@ export function addProto(root: Root, name: string, source: string): FileDescript
   return JSON.parse(_addProto(root, name, source));
 }
 
-export function encode(root: Root, type: string, obj: unknown): Uint8Array {
-  return _encode(root, type, JSON.stringify(obj)).arr().slice(0);
+export function encode<T>(root: Root, type: string, obj: JsonObject<T>): Uint8Array {
+  return _encode(root, type, toJSONByteString(obj)).arr().slice(0);
 }
 
 export function decode<T>(root: Root, type: string, bin: Uint8Array): T {
@@ -49,8 +59,8 @@ export interface Resolve {
   query?: Record<string, Query>;
 }
 
-export function encodeResolve(obj: Resolve): Uint8Array {
-  return _encodeResolve(JSON.stringify(obj)).arr().slice(0);
+export function encodeResolve(obj: JsonObject<Resolve>): Uint8Array {
+  return _encodeResolve(toJSONByteString(obj)).arr().slice(0);
 }
 
 export function decodeResolve<Resolve>(bin: Uint8Array): Resolve {
