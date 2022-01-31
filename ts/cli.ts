@@ -1,14 +1,24 @@
 #!/usr/bin/env deno run
 
+import { assert } from 'https://deno.land/std@0.123.0/testing/asserts.ts';
 import { readAll } from 'https://deno.land/std@0.123.0/streams/mod.ts';
 import { parse } from 'https://deno.land/std@0.123.0/flags/mod.ts';
 import { decode, encode, encodeResolve, Resolve } from './apix.ts';
+import { getEncoder } from './util.ts';
 
-const b64Decode = (s: string) => new Uint8Array([...atob(s)].map((c) => c.charCodeAt(0)));
+const getResolve = (resolveRaw: string) => {
+  const resolveType = String(resolveRaw).startsWith('{') ? 'json' : 'b64';
+  const resolveEncoder = getEncoder(resolveType);
+  assert(resolveEncoder, `Invalid --resolve: '${resolveType}'`);
+  return resolveEncoder(resolveRaw);
+};
 
-async function processStdin(blob: Uint8Array, method: Method, type: string) {
-  const stdin = () => readAll(Deno.stdin);
+const stdin = () => readAll(Deno.stdin);
+
+async function processStdin(blob: Uint8Array, method: string, type: string) {
   switch (method) {
+    case 'encode-resolve':
+      return String.fromCharCode.apply(null, [...blob]);
     case 'encode':
       return String.fromCharCode.apply(null, [...await encode(blob, type, await stdin())]);
     case 'decode':
@@ -18,20 +28,13 @@ async function processStdin(blob: Uint8Array, method: Method, type: string) {
   }
 }
 
-export type Method = 'encode' | 'decode';
-
 export default async function cli(resolve?: Resolve) {
   const { _: [method, type], resolve: resolveValue, b64 } = parse(Deno.args, {
     boolean: 'b64',
     string: 'resolve',
   });
-  // assume --resolve: JSON | base64 encoded proto
-  const blob = resolve ?? String(resolveValue).startsWith('{')
-    ? encodeResolve(resolve ?? resolveValue)
-    : b64Decode(resolveValue);
-  const str = method === 'encode-resolve'
-    ? String.fromCharCode.apply(null, [...blob])
-    : await processStdin(blob, method as Method, String(type));
+  const blob = resolve ? encodeResolve(resolve) : getResolve(resolveValue);
+  const str = await processStdin(blob, String(method), String(type));
   console.log(b64 ? btoa(str) : str);
 }
 

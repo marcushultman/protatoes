@@ -1,23 +1,19 @@
 import { Application, Context, Router } from 'https://deno.land/x/oak/mod.ts';
-import { decode, encode, encodeResolve } from './apix.ts';
+import { decode, encode } from './apix.ts';
+import { getEncoder } from './util.ts';
 
 const assertContentType = (ctx: Context, eq: string) => {
   const ct = ctx.request.headers.get('content-type');
   ctx.assert(!ct || ct === eq, 400);
 };
 
-const RESOLVE_ENCODERS = new Map<string, (value: string) => Uint8Array>([
-  ['base64', (b64) => new Uint8Array([...atob(b64)].map((c) => c.charCodeAt(0)))],
-  ['json', (json) => encodeResolve(JSON.parse(json))],
-]);
-
 const getResolve = (ctx: Context) => {
   const resolveRaw = ctx.request.headers.get('x-resolve');
   ctx.assert(resolveRaw, 400, `Missing 'x-resolve' header`);
-  const resolveType = ctx.request.headers.get('x-resolve-type');
-  const decodeResolve = RESOLVE_ENCODERS.get(resolveType ?? 'base64');
-  ctx.assert(decodeResolve, 400, `Invalid 'x-resolve-type': '${resolveType}'`);
-  return decodeResolve(resolveRaw);
+  const resolveType = ctx.request.headers.get('x-resolve-type') ?? 'b64';
+  const resolveEncoder = getEncoder(resolveType);
+  ctx.assert(resolveEncoder, 400, `Invalid 'x-resolve-type': '${resolveType}'`);
+  return resolveEncoder(resolveRaw);
 };
 
 const router = new Router();
