@@ -7,10 +7,6 @@ message File {
   string source = 2;
 }
 
-message Query {
-  map<string, string> params = 1;
-}
-
 message Resolve {
   optional string prefix = 1; 
   string entry = 2;

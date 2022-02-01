@@ -49,10 +49,6 @@ export interface File {
   source: string;
 }
 
-export interface Query {
-  params: Record<string, string>;
-}
-
 export interface Resolve {
   prefix?: string;
   entry?: string;
