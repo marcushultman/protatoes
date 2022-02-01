@@ -13,10 +13,7 @@ WASM_LINKOPTS = [
 cc_binary(
   name = "api",
   srcs = ["api.cpp"],
-  additional_linker_inputs = ["polyfill.js"],
-  linkopts = WASM_LINKOPTS + [
-    "--extern-pre-js=$(location :polyfill.js)"
-  ],
+  linkopts = WASM_LINKOPTS,
   deps = [
     "//proto:protatoes_cc_proto",
     "@com_google_protobuf//:protoc_lib",
