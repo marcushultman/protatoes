@@ -16,5 +16,4 @@ message Resolve {
   string entry = 2;
   repeated string includes = 3;
   repeated File files = 4;
-  map<string, Query> query = 5;
 }

@@ -56,7 +56,6 @@ export interface Resolve {
   entry?: string;
   includes?: string[];
   files?: File[];
-  query?: Record<string, Query>;
 }
 
 export function encodeResolve(obj: JsonObject<Resolve>): Uint8Array {
