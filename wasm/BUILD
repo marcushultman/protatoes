@@ -4,6 +4,7 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 WASM_LINKOPTS = [
   "--bind",
   "--no-entry",
+  "-Oz",
   "-sMODULARIZE",
   "-sEXPORT_ES6",
   "-sSINGLE_FILE",
