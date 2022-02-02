@@ -11,25 +11,24 @@ import {
   Root,
 } from './api.ts';
 
-const toOpts = ({ includes }: Resolve) => ({
+const toOpts = ({ includes, authTokens }: Resolve) => ({
   includes: (includes ?? []).map((include) => new URL(include)),
+  authTokens,
 });
 
 type Options = ReturnType<typeof toOpts>;
 
+const makeTokenMap = (s?: string) =>
+  new Map(s ? s.split(';').map((t) => t.split('@', 2).reverse() as [string, string]) : []);
+
 const authTokensPromise = (async () => {
   const variable = 'DENO_AUTH_TOKENS';
   const { state: status } = await Deno.permissions.query({ name: 'env', variable });
-  const tokenVar = status === 'granted' ? Deno.env.get(variable) : undefined;
-  return tokenVar
-    ? new Map(
-      tokenVar.split(';').map((token) => token.split('@', 2).reverse() as [string, string]),
-    )
-    : null;
+  return makeTokenMap(status === 'granted' ? Deno.env.get(variable) : undefined);
 })();
 
-async function fetchSource(path: string, { includes }: Options): Promise<string> {
-  const authTokens = await authTokensPromise;
+async function fetchSource(path: string, { includes, authTokens }: Options): Promise<string> {
+  const authTokensMap = new Map([...await authTokensPromise, ...makeTokenMap(authTokens)]);
   const urls = includes.slice(0);
   try {
     urls.unshift(new URL(path));
@@ -38,7 +37,7 @@ async function fetchSource(path: string, { includes }: Options): Promise<string>
   }
   for (const include of urls) {
     const url = new URL(path, include);
-    const token = authTokens?.get(url.host);
+    const token = authTokensMap.get(url.host);
     const headers = token ? { 'Authorization': `Bearer ${token}` } : undefined;
     const res = await fetch(url, { headers });
     if (res.ok) {

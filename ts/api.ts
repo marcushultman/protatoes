@@ -54,6 +54,7 @@ export interface Resolve {
   entry?: string;
   includes?: string[];
   files?: File[];
+  authTokens?: string;
 }
 
 export function encodeResolve(obj: JsonObject<Resolve>): Uint8Array {
