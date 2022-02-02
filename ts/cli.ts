@@ -1,7 +1,7 @@
 #!/usr/bin/env deno run
 
 import { assert } from 'https://deno.land/std@0.123.0/testing/asserts.ts';
-import { readAll } from 'https://deno.land/std@0.123.0/streams/mod.ts';
+import { readAll, writeAll } from 'https://deno.land/std@0.123.0/streams/mod.ts';
 import { parse } from 'https://deno.land/std@0.123.0/flags/mod.ts';
 import { decode, encode, encodeResolve, Resolve } from './apix.ts';
 import { getEncoder } from './util.ts';
@@ -18,15 +18,18 @@ const stdin = () => readAll(Deno.stdin);
 async function processStdin(blob: Uint8Array, method: string, type: string) {
   switch (method) {
     case 'encode-resolve':
-      return String.fromCharCode.apply(null, [...blob]);
+      return blob;
     case 'encode':
-      return String.fromCharCode.apply(null, [...await encode(blob, type, await stdin())]);
+      return await encode(blob, type, await stdin());
     case 'decode':
-      return JSON.stringify(await decode(blob, type, await stdin()));
+      return new TextEncoder().encode(JSON.stringify(await decode(blob, type, await stdin())));
     default:
       throw new Error(method ? `${method} not 'encode'/'decode'` : `Missing method`);
   }
 }
+
+const btoaArr = (arr: Uint8Array) =>
+  new TextEncoder().encode(btoa(String.fromCharCode.apply(null, [...arr])));
 
 export default async function cli(resolve?: Resolve) {
   const { _: [method, type], resolve: resolveValue, b64 } = parse(Deno.args, {
@@ -34,8 +37,8 @@ export default async function cli(resolve?: Resolve) {
     string: 'resolve',
   });
   const blob = resolve ? encodeResolve(resolve) : getResolve(resolveValue);
-  const str = await processStdin(blob, String(method), String(type));
-  console.log(b64 ? btoa(str) : str);
+  const arr = await processStdin(blob, String(method), String(type));
+  await writeAll(Deno.stdout, b64 ? btoaArr(arr) : arr);
 }
 
 if (import.meta.main) {
