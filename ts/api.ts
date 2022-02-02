@@ -51,7 +51,7 @@ export interface File {
 
 export interface Resolve {
   prefix?: string;
-  entry?: string;
+  entries?: string[];
   includes?: string[];
   files?: File[];
   authTokens?: string;

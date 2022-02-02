@@ -69,7 +69,8 @@ async function getOrCreateRoot(bin: Uint8Array) {
   const resolve: Resolve = decodeResolve(bin);
   root = createRoot(resolve.prefix ?? 'type.googleapis.com');
   (resolve.files ?? []).map(({ name, source }) => addProto(root, name, source));
-  resolve.entry && await addFromURL(root, resolve.entry, toOpts(resolve));
+  const opts = toOpts(resolve);
+  await Promise.all(resolve.entries?.map((entry) => addFromURL(root, entry, opts)) ?? []);
   roots.set(key, root);
   return root;
 }
