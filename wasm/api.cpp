@@ -23,7 +23,7 @@ struct Root {
         util::NewTypeResolverForDescriptorPool(_prefix, _pool.get()));
   }
 
-  void add(FileDescriptorProto *proto) { _db->AddAndOwn(proto); }
+  bool add(FileDescriptorProto *proto) { return _db->AddAndOwn(proto); }
 
   util::TypeResolver *resolver() const { return _type_resolver.get(); }
   std::string makeTypeUrl(const std::string &name) const { return _prefix + "/" + name; }
@@ -61,14 +61,17 @@ FileDescriptorProto *parseFile(std::string name, std::string source) {
   auto stream = io::ArrayInputStream(source.data(), source.size());
   auto tokenizer = io::Tokenizer(&stream, nullptr);
   auto proto = std::make_unique<FileDescriptorProto>();
-  parser.Parse(&tokenizer, proto.get());
+  auto parse_ok = parser.Parse(&tokenizer, proto.get());
+  assert(parse_ok);
   proto->set_name(std::move(name));
   return proto.release();
 }
 
 std::string addProto(Root *root, std::string name, std::string source) {
+  assert(!name.empty());
   auto proto = parseFile(std::move(name), std::move(source));
-  root->add(proto);
+  auto add_ok = root->add(proto);
+  assert(add_ok);
   std::string json;
   MessageToJsonString(*proto, &json);
   return json;
@@ -76,31 +79,34 @@ std::string addProto(Root *root, std::string name, std::string source) {
 
 Encoded encode(Root *root, std::string type, std::string json) {
   Encoded encoded;
-  JsonToBinaryString(root->resolver(), root->makeTypeUrl(type), json, &encoded.str);
+  auto encode_ok =
+      JsonToBinaryString(root->resolver(), root->makeTypeUrl(type), json, &encoded.str).ok();
+  assert(encode_ok);
   return encoded;
 }
 
 std::string decode(Root *root, std::string type, std::string bin) {
   std::string json;
-  BinaryToJsonString(root->resolver(), root->makeTypeUrl(type), bin, &json);
+  auto decode_ok = BinaryToJsonString(root->resolver(), root->makeTypeUrl(type), bin, &json).ok();
+  assert(decode_ok);
   return json;
 }
 
 Encoded encodeResolve(std::string json) {
   Encoded encoded;
   static protatoes::Resolve resolve;
-  if (JsonStringToMessage(json, &resolve).ok()) {
-    resolve.SerializeToString(&encoded.str);
-  }
+  auto encode_ok = JsonStringToMessage(json, &resolve).ok();
+  assert(encode_ok);
+  resolve.SerializeToString(&encoded.str);
   return encoded;
 }
 
 std::string decodeResolve(std::string bin) {
   std::string json;
   static protatoes::Resolve resolve;
-  if (resolve.ParseFromString(bin)) {
-    MessageToJsonString(resolve, &json);
-  }
+  auto parse_ok = resolve.ParseFromString(bin);
+  assert(parse_ok);
+  MessageToJsonString(resolve, &json);
   return json;
 }
 

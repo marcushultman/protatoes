@@ -12,7 +12,7 @@ const {
   release,
 } = await loadWasm();
 
-export type JsonObject<T> = Uint8Array | string | T;
+export type JsonObject<T> = Uint8Array | string | NonNullable<T>;
 
 function toJSONByteString(obj: JsonObject<unknown>) {
   if (obj instanceof Uint8Array) {
