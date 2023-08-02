@@ -1,0 +1,5 @@
+build --cxxopt="-std=c++20"
+build --host_cxxopt="-std=c++20"
+build --copt="-Wno-deprecated-non-prototype"
+build --copt="-Wno-unused-function"
+build --copt="-Wno-unused-result"

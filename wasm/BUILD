@@ -17,7 +17,7 @@ cc_binary(
   linkopts = WASM_LINKOPTS,
   deps = [
     "//proto:protatoes_cc_proto",
-    "@com_google_protobuf//:protoc_lib",
+    "@com_google_protobuf//:protobuf",
   ],
 )
 
