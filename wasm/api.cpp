@@ -95,6 +95,7 @@ std::string decode(Root *root, std::string type, std::string bin) {
 Encoded encodeResolve(std::string json) {
   Encoded encoded;
   static protatoes::Resolve resolve;
+  resolve.Clear();
   auto encode_ok = JsonStringToMessage(json, &resolve).ok();
   assert(encode_ok);
   resolve.SerializeToString(&encoded.str);
