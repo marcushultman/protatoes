@@ -8,7 +8,7 @@ message File {
 }
 
 message Resolve {
-  optional string prefix = 1; 
+  optional string prefix = 1;
   repeated string entries = 2;
   repeated string includes = 3;
   repeated File files = 4;
