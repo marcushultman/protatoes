@@ -1,5 +1,6 @@
-import { assert, assertEquals } from 'https://deno.land/std@0.121.0/testing/asserts.ts';
-import { encodeResolve } from './apix.ts';
+import { assert, assertEquals } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
+import { Resolve, encodeResolve } from './apix.ts';
+import { start } from './server.ts';
 
 const BASE_URL = Deno.env.get('PROD') === '1'
   ? 'https://protatoes.deno.dev'
@@ -11,11 +12,20 @@ const FILE_URL = Deno.env.get('PROD') === '1'
 
 const SOURCE = await fetch(FILE_URL).then((res) => res.text());
 
+async function startServer() {
+  const ctrl = new AbortController();
+  const server = start({ port: 8000, signal: ctrl.signal });
+  await new Promise(onStart => server.addEventListener('listen', onStart));
+  return () => ctrl.abort();
+}
+
 Deno.test({
   name: 'local-json',
   async fn() {
+    const stopServer = await startServer();
+    const resolve: Resolve = { entries: [FILE_URL.toString()] };
     const headers: HeadersInit = {
-      'x-resolve': JSON.stringify({ entry: FILE_URL }),
+      'x-resolve': JSON.stringify(resolve),
       'x-resolve-type': 'json',
     };
     const resEncode = await fetch(`${BASE_URL}/encode/foo.bar.Baz`, {
@@ -36,13 +46,18 @@ Deno.test({
     assert(resDecode.ok);
 
     assertEquals(await resDecode.json(), { a: 'foo', b: 'bar' });
+
+    stopServer();
   },
 });
 
 Deno.test({
   name: 'local-proto',
   async fn() {
-    const blob = encodeResolve({ entry: FILE_URL.toString() });
+    const stopServer = await startServer();
+
+    const resolve: Resolve = { entries: [FILE_URL.toString()] };
+    const blob = encodeResolve(resolve);
     const headers: HeadersInit = {
       'x-resolve': btoa(String.fromCharCode.apply(null, [...blob])),
     };
@@ -64,14 +79,18 @@ Deno.test({
     assert(resDecode.ok);
 
     assertEquals(await resDecode.json(), { a: 'foo', b: 'bar' });
+
+    stopServer();
   },
 });
 
 Deno.test({
   name: 'source',
   async fn() {
+    const stopServer = await startServer();
+    const resolve: Resolve = { files: [{ name: 'text.proto', source: SOURCE }] };
     const headers: HeadersInit = {
-      'x-resolve': JSON.stringify({ files: [{ name: 'text.proto', source: SOURCE }] }),
+      'x-resolve': JSON.stringify(resolve),
       'x-resolve-type': 'json',
     };
     const resEncode = await fetch(`${BASE_URL}/encode/foo.bar.Baz`, {
@@ -92,16 +111,21 @@ Deno.test({
     assert(resDecode.ok);
 
     assertEquals(await resDecode.json(), { a: 'foo', b: 'bar' });
+
+    stopServer();
   },
 });
 Deno.test({
   name: 'web',
   async fn() {
+    const stopServer = await startServer();
+
+    const resolve: Resolve = {
+      entries: ['google/protobuf/any_test.proto'],
+      includes: ['https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/'],
+    };
     const headers: HeadersInit = {
-      'x-resolve': JSON.stringify({
-        entry: 'google/protobuf/any_test.proto',
-        includes: ['https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/'],
-      }),
+      'x-resolve': JSON.stringify(resolve),
       'x-resolve-type': 'json',
     };
     const resEncode = await fetch(`${BASE_URL}/encode/protobuf_unittest.TestAny`, {
@@ -138,5 +162,7 @@ Deno.test({
         text: '43',
       },
     });
+
+    stopServer();
   },
 });

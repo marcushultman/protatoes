@@ -1,4 +1,4 @@
-import { Application, Context, Router } from 'https://deno.land/x/oak/mod.ts';
+import { Application, Context, ListenOptions, Router } from 'https://deno.land/x/oak/mod.ts';
 import { decode, encode } from './apix.ts';
 import { getEncoder } from './util.ts';
 
@@ -35,8 +35,16 @@ router
     ctx.response.body = await decode(blob, type, bytes);
   });
 
-const app = new Application();
-app.use(router.routes());
-app.use(router.allowedMethods());
 
-await app.listen({ port: 8000 });
+
+export function start(opts: ListenOptions = {}) {
+  const app = new Application();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+  app.listen(opts);
+  return app;
+}
+
+if (import.meta.main) {
+  await start();
+}

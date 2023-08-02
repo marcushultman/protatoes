@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.121.0/testing/asserts.ts';
+import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
 
 import { addProto, encode, createRoot } from './api.ts';
 

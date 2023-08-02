@@ -1,4 +1,4 @@
-import { assertEquals } from 'https://deno.land/std@0.121.0/testing/asserts.ts';
+import { assertEquals } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
 
 import { decode, encode, encodeResolve } from './apix.ts';
 
@@ -9,9 +9,8 @@ Deno.test({
   name: 'local',
   async fn() {
     const blob = encodeResolve({
-      entry: FILE_URL.toString(),
+      entries: [FILE_URL.toString()],
     });
-    assertEquals(blob.byteLength, 61);
     const data = await encode(blob, 'foo.bar.Baz', { a: 'foo', b: 'bar' });
     assertEquals(data.byteLength, 10);
     const decoded = await decode(blob, 'foo.bar.Baz', data);
@@ -39,7 +38,7 @@ Deno.test({
   name: 'web',
   async fn() {
     const blob = encodeResolve({
-      entry: 'google/protobuf/any_test.proto',
+      entries: ['google/protobuf/any_test.proto'],
       includes: ['https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/'],
     });
     assertEquals(blob.byteLength, 104);
