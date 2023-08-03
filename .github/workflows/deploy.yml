@@ -8,15 +8,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      DENO_DIR: ~/.deno-cache
     steps:
       - uses: actions/checkout@v3
       - uses: bazelbuild/setup-bazelisk@v2
       - uses: denoland/setup-deno@v1
-      - name: Mount bazel cache
+      - name: bazel cache
         uses: actions/cache@v3
         with:
-          path: "~/.cache/bazel"
+          path: ~/.cache/bazel
           key: bazel
+      - name: deno cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ hashFiles('deno.lock') }}
       - run: bazel build //wasm
       - run: ./copy-build.sh
       - run: deno test -A ts
