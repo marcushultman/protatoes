@@ -1,4 +1,4 @@
-import { assert, assertEquals } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
+import { assert, assertEquals } from 'https://deno.land/std@0.196.0/assert/mod.ts';
 import { Resolve, encodeResolve } from './apix.ts';
 import { start } from './server.ts';
 

@@ -1,5 +1,4 @@
-import { assertEquals } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
-
+import { assertEquals } from 'https://deno.land/std@0.196.0/assert/mod.ts';
 import { decode, encode, encodeResolve } from './apix.ts';
 
 const FILE_URL = new URL('../proto/test.proto', import.meta.url);

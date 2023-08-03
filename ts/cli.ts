@@ -1,6 +1,6 @@
 #!/usr/bin/env deno run
 
-import { assert } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
+import { assert } from 'https://deno.land/std@0.196.0/assert/mod.ts';
 import { readAll, writeAll } from 'https://deno.land/std@0.196.0/streams/mod.ts';
 import { parse } from 'https://deno.land/std@0.196.0/flags/mod.ts';
 import { decode, encode, encodeResolve, Resolve } from './apix.ts';
