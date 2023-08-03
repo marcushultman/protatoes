@@ -1,6 +1,11 @@
-import { Application, Context, ListenOptions, Router } from 'https://deno.land/x/oak/mod.ts';
+import {
+  Application,
+  Context,
+  ListenOptions,
+  Router,
+} from 'https://deno.land/x/oak@v12.6.0/mod.ts';
 import { decode, encode } from './apix.ts';
-import { getEncoder } from './util.ts';
+import { getParser } from './util.ts';
 
 const assertContentType = (ctx: Context, eq: string) => {
   const ct = ctx.request.headers.get('content-type');
@@ -10,10 +15,10 @@ const assertContentType = (ctx: Context, eq: string) => {
 const getResolve = (ctx: Context) => {
   const resolveRaw = ctx.request.headers.get('x-resolve');
   ctx.assert(resolveRaw, 400, `Missing 'x-resolve' header`);
-  const resolveType = ctx.request.headers.get('x-resolve-type') ?? 'b64';
-  const resolveEncoder = getEncoder(resolveType);
-  ctx.assert(resolveEncoder, 400, `Invalid 'x-resolve-type': '${resolveType}'`);
-  return resolveEncoder(resolveRaw);
+  const format = ctx.request.headers.get('x-resolve-type') ?? 'b64';
+  const parseResolve = getParser(format);
+  ctx.assert(parseResolve, 400, `Invalid 'x-resolve-type': '${format}'`);
+  return parseResolve(resolveRaw);
 };
 
 const router = new Router();
@@ -34,8 +39,6 @@ router
     console.log(`Decoding ${type} (${bytes.byteLength} bytes)`);
     ctx.response.body = await decode(blob, type, bytes);
   });
-
-
 
 export function start(opts: ListenOptions = {}) {
   const app = new Application();
