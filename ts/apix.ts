@@ -21,14 +21,8 @@ type Options = ReturnType<typeof toOpts>;
 const makeTokenMap = (s?: string) =>
   new Map(s ? s.split(';').map((t) => t.split('@', 2).reverse() as [string, string]) : []);
 
-const authTokensPromise = (async () => {
-  const variable = 'DENO_AUTH_TOKENS';
-  const { state: status } = await Deno.permissions.query({ name: 'env', variable });
-  return makeTokenMap(status === 'granted' ? Deno.env.get(variable) : undefined);
-})();
-
 async function fetchSource(path: string, { includes, authTokens }: Options): Promise<string> {
-  const authTokensMap = new Map([...await authTokensPromise, ...makeTokenMap(authTokens)]);
+  const hostAuthToken = makeTokenMap(authTokens);
   const urls = includes.slice(0);
   try {
     urls.unshift(new URL(path));
@@ -37,7 +31,7 @@ async function fetchSource(path: string, { includes, authTokens }: Options): Pro
   }
   for (const include of urls) {
     const url = new URL(path, include);
-    const token = authTokensMap.get(url.host);
+    const token = hostAuthToken.get(url.host);
     const headers = token ? { 'Authorization': `Bearer ${token}` } : undefined;
     const res = await fetch(url, { headers });
     if (res.ok) {
