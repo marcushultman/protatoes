@@ -36,7 +36,11 @@ export default async function cli(resolve?: Resolve) {
     boolean: 'b64',
     string: 'resolve',
   });
-  const blob = resolve ? encodeResolve(resolve) : getResolve(resolveValue);
+  const blob = resolve
+    ? encodeResolve(resolve)
+    : resolveValue
+    ? getResolve(resolveValue)
+    : new Uint8Array();
   const arr = await processStdin(blob, String(method), String(type));
   await writeAll(Deno.stdout, b64 ? btoaArr(arr) : arr);
 }
