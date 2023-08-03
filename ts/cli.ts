@@ -1,6 +1,6 @@
 #!/usr/bin/env deno run
 
-import { assert } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
+import { assert } from 'https://deno.land/std@0.196.0/assert/mod.ts';
 import { readAll, writeAll } from 'https://deno.land/std@0.196.0/streams/mod.ts';
 import { parse } from 'https://deno.land/std@0.196.0/flags/mod.ts';
 import { decode, encode, encodeResolve, Resolve } from './apix.ts';
@@ -36,7 +36,11 @@ export default async function cli(resolve?: Resolve) {
     boolean: 'b64',
     string: 'resolve',
   });
-  const blob = resolve ? encodeResolve(resolve) : getResolve(resolveValue);
+  const blob = resolve
+    ? encodeResolve(resolve)
+    : resolveValue
+    ? getResolve(resolveValue)
+    : new Uint8Array();
   const arr = await processStdin(blob, String(method), String(type));
   await writeAll(Deno.stdout, b64 ? btoaArr(arr) : arr);
 }
