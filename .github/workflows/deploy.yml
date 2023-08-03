@@ -27,6 +27,8 @@ jobs:
       - run: bazel build //wasm
       - run: ./copy-build.sh
       - run: deno test -A ts
+      - run: deno run -A build.ts
+        if: github.ref == 'refs/heads/main'
       - uses: dfm/force-push-branch-action@v1
         if: github.ref == 'refs/heads/main'
         with:
@@ -34,4 +36,5 @@ jobs:
           commit-message: Build
           path: |
             bin
+            dist
             ts
