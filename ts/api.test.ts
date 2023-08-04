@@ -1,5 +1,4 @@
-import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.196.0/testing/asserts.ts';
-
+import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.196.0/assert/mod.ts';
 import { addProto, encode, createRoot } from './api.ts';
 
 const FILE_URL = new URL('../proto/test.proto', import.meta.url);
