@@ -1,5 +1,5 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.196.0/assert/mod.ts';
-import { Resolve, encodeResolve } from './apix.ts';
+import { encodeResolve, Resolve } from './apix.ts';
 import { start } from './server.ts';
 
 const BASE_URL = Deno.env.get('PROD') === '1'
@@ -15,7 +15,7 @@ const SOURCE = await fetch(FILE_URL).then((res) => res.text());
 async function startServer() {
   const ctrl = new AbortController();
   const server = start({ port: 8000, signal: ctrl.signal });
-  await new Promise(onStart => server.addEventListener('listen', onStart));
+  await new Promise((onStart) => server.addEventListener('listen', onStart));
   return () => ctrl.abort();
 }
 

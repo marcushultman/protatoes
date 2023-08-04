@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.196.0/assert/mod.ts';
-import { addProto, encode, createRoot } from './api.ts';
+import { addProto, createRoot, encode } from './api.ts';
 
 const FILE_URL = new URL('../proto/test.proto', import.meta.url);
 const SOURCE = Deno.readTextFileSync(FILE_URL);
@@ -39,7 +39,7 @@ Deno.test({
     const root = createRoot('');
     const errors = [];
     addProto(root, 'file.proto', SOURCE);
-    
+
     try {
       encode(root, 'foo.bar.Baz', 'crap');
     } catch (err) {
@@ -47,6 +47,6 @@ Deno.test({
     }
 
     assertEquals(errors.length, 1);
-    assertStringIncludes(errors[0].message, 'Assertion failed: encode_ok');    
+    assertStringIncludes(errors[0].message, 'Assertion failed: encode_ok');
   },
 });
