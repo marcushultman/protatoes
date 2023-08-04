@@ -6,8 +6,11 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  CI:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
       DENO_DIR: ~/.deno-cache
     steps:
@@ -38,3 +41,9 @@ jobs:
             bin
             dist
             ts
+      - name: Deno Deploy
+        if: github.ref == 'refs/heads/main'
+        uses: denoland/deployctl@v1
+        with:
+          project: protatoes
+          entrypoint: ts/server.ts
