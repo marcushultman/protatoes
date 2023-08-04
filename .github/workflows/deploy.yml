@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: read
+      contents: write
     env:
       DENO_DIR: ~/.deno-cache
     steps:
@@ -35,7 +35,6 @@ jobs:
       - uses: dfm/force-push-branch-action@v1
         if: github.ref == 'refs/heads/main'
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: deno
           commit-message: Build
           path: |
