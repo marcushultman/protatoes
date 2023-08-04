@@ -45,6 +45,7 @@ export function start(opts: ListenOptions = {}) {
   app.use(router.routes());
   app.use(router.allowedMethods());
   app.listen(opts);
+  app.addEventListener('listen', (e) => console.log(`Listening on port ${e.port}`));
   return app;
 }
 
