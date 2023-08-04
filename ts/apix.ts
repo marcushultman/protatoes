@@ -2,14 +2,13 @@ import {
   addProto,
   createRoot,
   decode as _decode,
-  decodeResolve,
+  decodeResolve as _decodeResolve,
   encode as _encode,
-  encodeResolve,
+  encodeResolve as _encodeResolve,
   FileDescriptorProto,
-  JsonObject,
-  Resolve,
   Root,
 } from './api.ts';
+import { JsonObject, toJSONByteString } from './json_util.ts';
 
 const toOpts = ({ includes, authTokens }: Resolve) => ({
   includes: (includes ?? []).map((include) => new URL(include)),
@@ -69,8 +68,28 @@ async function getOrCreateRoot(bin: Uint8Array) {
   return root;
 }
 
-export { encodeResolve };
-export type { JsonObject, Resolve };
+export type { JsonObject };
+
+export interface File {
+  name: string;
+  source: string;
+}
+
+export interface Resolve {
+  prefix?: string;
+  entries?: string[];
+  includes?: string[];
+  files?: File[];
+  authTokens?: string;
+}
+
+export function encodeResolve(obj: JsonObject<Resolve>): Uint8Array {
+  return _encodeResolve(toJSONByteString(obj)).arr().slice(0);
+}
+
+export function decodeResolve<Resolve>(bin: Uint8Array): Resolve {
+  return JSON.parse(_decodeResolve(bin));
+}
 
 export async function encode<T>(blob: Uint8Array, type: string, obj: JsonObject<T>) {
   return _encode(await getOrCreateRoot(blob), type, obj);

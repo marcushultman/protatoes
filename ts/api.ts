@@ -1,26 +1,17 @@
 import loadWasm from '../bin/api.js';
+import { JsonObject, toJSONByteString } from './json_util.ts';
 
 const {
-  createRoot,
-  decode: _decode,
-  decodeResolve: _decodeResolve,
-  encode: _encode,
-  encodeResolve: _encodeResolve,
+  createRoot: _createRoot,
+  release: _release,
   addProto: _addProto,
-  release,
+  encode: _encode,
+  decode: _decode,
+  encodeResolve,
+  decodeResolve,
 } = await loadWasm();
 
-export type JsonObject<T> = Uint8Array | string | NonNullable<T>;
-
-function toJSONByteString(obj: JsonObject<unknown>) {
-  if (obj instanceof Uint8Array) {
-    return obj;
-  }
-  const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
-  return new TextEncoder().encode(str);
-}
-
-export { createRoot, release };
+export type { JsonObject };
 
 export type Root = unknown;
 
@@ -28,6 +19,14 @@ export interface FileDescriptorProto {
   name: string;
   package: string;
   dependency?: string[];
+}
+
+export function createRoot(prefix: string): Root {
+  return _createRoot(prefix);
+}
+
+export function release(root: Root) {
+  return _release(root);
 }
 
 export function addProto(root: Root, name: string, source: string): FileDescriptorProto {
@@ -42,23 +41,4 @@ export function decode<T>(root: Root, type: string, bin: Uint8Array): T {
   return JSON.parse(_decode(root, type, bin));
 }
 
-export interface File {
-  name: string;
-  source: string;
-}
-
-export interface Resolve {
-  prefix?: string;
-  entries?: string[];
-  includes?: string[];
-  files?: File[];
-  authTokens?: string;
-}
-
-export function encodeResolve(obj: JsonObject<Resolve>): Uint8Array {
-  return _encodeResolve(toJSONByteString(obj)).arr().slice(0);
-}
-
-export function decodeResolve<Resolve>(bin: Uint8Array): Resolve {
-  return JSON.parse(_decodeResolve(bin));
-}
+export { decodeResolve, encodeResolve };

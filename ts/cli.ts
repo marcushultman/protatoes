@@ -4,13 +4,13 @@ import { assert } from 'https://deno.land/std@0.196.0/assert/mod.ts';
 import { readAll, writeAll } from 'https://deno.land/std@0.196.0/streams/mod.ts';
 import { parse } from 'https://deno.land/std@0.196.0/flags/mod.ts';
 import { decode, encode, encodeResolve, Resolve } from './apix.ts';
-import { getEncoder } from './util.ts';
+import { getParser } from './util.ts';
 
 const getResolve = (resolveRaw: string) => {
-  const resolveType = String(resolveRaw).startsWith('{') ? 'json' : 'b64';
-  const resolveEncoder = getEncoder(resolveType);
-  assert(resolveEncoder, `Invalid --resolve: '${resolveType}'`);
-  return resolveEncoder(resolveRaw);
+  const format = String(resolveRaw).startsWith('{') ? 'json' : 'b64';
+  const parseResolve = getParser(format);
+  assert(parseResolve, `Invalid --resolve: '${format}'`);
+  return parseResolve(resolveRaw);
 };
 
 const stdin = () => readAll(Deno.stdin);
